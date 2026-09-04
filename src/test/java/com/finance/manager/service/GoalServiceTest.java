@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -206,5 +207,143 @@ class GoalServiceTest {
         assertNotNull(response);
         assertEquals("Goal deleted successfully", response.getMessage());
         verify(savingsGoalRepository).delete(g1);
+    }
+
+    @Test
+    void createGoal_nullStartDate_defaultsToNow() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        LocalDate targetDate = LocalDate.now().plusMonths(6);
+
+        CreateGoalRequest request = new CreateGoalRequest("Trip", BigDecimal.valueOf(1000), targetDate, null);
+
+        SavingsGoal savedGoal = new SavingsGoal("Trip", BigDecimal.valueOf(1000), targetDate, LocalDate.now(), testUser);
+        savedGoal.setId(2L);
+        when(savingsGoalRepository.save(any(SavingsGoal.class))).thenReturn(savedGoal);
+        when(transactionRepository.findByUserAndDateGreaterThanEqual(eq(testUser), any(LocalDate.class))).thenReturn(List.of());
+
+        GoalResponse response = goalService.createGoal(request);
+
+        assertNotNull(response);
+        assertEquals(LocalDate.now(), response.getStartDate());
+    }
+
+    @Test
+    void createGoal_nullTargetDate_throwsBadRequest() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        CreateGoalRequest request = new CreateGoalRequest("Trip", BigDecimal.valueOf(1000), null, LocalDate.now());
+
+        assertThrows(BadRequestException.class, () -> goalService.createGoal(request));
+    }
+
+    @Test
+    void createGoal_nullTargetAmount_throwsBadRequest() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        CreateGoalRequest request = new CreateGoalRequest("Trip", null, LocalDate.now().plusMonths(6), LocalDate.now());
+
+        assertThrows(BadRequestException.class, () -> goalService.createGoal(request));
+    }
+
+    @Test
+    void updateGoal_notFound_throwsNotFound() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        when(savingsGoalRepository.findById(999L)).thenReturn(Optional.empty());
+
+        UpdateGoalRequest request = new UpdateGoalRequest("Updated", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6));
+        assertThrows(ResourceNotFoundException.class, () -> goalService.updateGoal(999L, request));
+    }
+
+    @Test
+    void updateGoal_otherUser_throwsForbidden() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        User otherUser = new User("other@example.com", "hash", "Other", "+111");
+        otherUser.setId(2L);
+
+        SavingsGoal g1 = new SavingsGoal("Trip", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6), LocalDate.now(), otherUser);
+        g1.setId(1L);
+
+        when(savingsGoalRepository.findById(1L)).thenReturn(Optional.of(g1));
+
+        UpdateGoalRequest request = new UpdateGoalRequest("Updated", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6));
+        assertThrows(ForbiddenException.class, () -> goalService.updateGoal(1L, request));
+    }
+
+    @Test
+    void updateGoal_negativeTargetAmount_throwsBadRequest() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        SavingsGoal g1 = new SavingsGoal("Trip", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6), LocalDate.now(), testUser);
+        g1.setId(1L);
+
+        when(savingsGoalRepository.findById(1L)).thenReturn(Optional.of(g1));
+
+        UpdateGoalRequest request = new UpdateGoalRequest(BigDecimal.valueOf(-100), LocalDate.now().plusMonths(6));
+        assertThrows(BadRequestException.class, () -> goalService.updateGoal(1L, request));
+    }
+
+    @Test
+    void updateGoal_withNullFields_noChanges() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        SavingsGoal g1 = new SavingsGoal("Trip", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6), LocalDate.now(), testUser);
+        g1.setId(1L);
+
+        when(savingsGoalRepository.findById(1L)).thenReturn(Optional.of(g1));
+        when(savingsGoalRepository.save(any(SavingsGoal.class))).thenAnswer(i -> i.getArgument(0));
+        when(transactionRepository.findByUserAndDateGreaterThanEqual(testUser, g1.getStartDate())).thenReturn(List.of());
+
+        UpdateGoalRequest request = new UpdateGoalRequest();
+
+        GoalResponse response = goalService.updateGoal(1L, request);
+
+        assertNotNull(response);
+        assertEquals("Trip", response.getGoalName());
+        assertEquals(BigDecimal.valueOf(2000).setScale(2), response.getTargetAmount());
+    }
+
+    @Test
+    void deleteGoal_notFound_throwsNotFound() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        when(savingsGoalRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> goalService.deleteGoal(999L));
+    }
+
+    @Test
+    void deleteGoal_otherUser_throwsForbidden() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        User otherUser = new User("other@example.com", "hash", "Other", "+111");
+        otherUser.setId(2L);
+
+        SavingsGoal g1 = new SavingsGoal("Trip", BigDecimal.valueOf(2000), LocalDate.now().plusMonths(6), LocalDate.now(), otherUser);
+        g1.setId(1L);
+
+        when(savingsGoalRepository.findById(1L)).thenReturn(Optional.of(g1));
+
+        assertThrows(ForbiddenException.class, () -> goalService.deleteGoal(1L));
+    }
+
+    @Test
+    void toGoalResponse_negativeProgress_and_progressExceedingTarget() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        LocalDate targetDate = LocalDate.now().plusMonths(6);
+        SavingsGoal g1 = new SavingsGoal("Trip", BigDecimal.valueOf(1000), targetDate, LocalDate.now(), testUser);
+        g1.setId(1L);
+
+        when(savingsGoalRepository.findById(1L)).thenReturn(Optional.of(g1));
+
+        Category expenseCat = new Category("Rent", CategoryType.EXPENSE, null, false);
+        Transaction tExpense = new Transaction(BigDecimal.valueOf(1500), LocalDate.now(), expenseCat, "Rent", CategoryType.EXPENSE, testUser);
+
+        when(transactionRepository.findByUserAndDateGreaterThanEqual(testUser, g1.getStartDate())).thenReturn(List.of(tExpense));
+
+        GoalResponse responseNeg = goalService.getGoalById(1L);
+        assertEquals(0.0, responseNeg.getProgressPercentage());
+        assertEquals(BigDecimal.valueOf(-1500).setScale(2), responseNeg.getCurrentProgress());
+
+        Category incomeCat = new Category("Salary", CategoryType.INCOME, null, false);
+        Transaction tBigIncome = new Transaction(BigDecimal.valueOf(5000), LocalDate.now(), incomeCat, "Bonus", CategoryType.INCOME, testUser);
+        when(transactionRepository.findByUserAndDateGreaterThanEqual(testUser, g1.getStartDate())).thenReturn(List.of(tBigIncome));
+
+        GoalResponse responseExceed = goalService.getGoalById(1L);
+        assertEquals(BigDecimal.valueOf(0).setScale(2), responseExceed.getRemainingAmount());
+        assertEquals(500.0, responseExceed.getProgressPercentage());
     }
 }

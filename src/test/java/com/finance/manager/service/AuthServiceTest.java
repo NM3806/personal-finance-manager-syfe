@@ -130,7 +130,41 @@ class AuthServiceTest {
     }
 
     @Test
+    void logout_success_nullSession() {
+        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+        HttpServletResponse httpResponse = mock(HttpServletResponse.class);
+
+        when(httpRequest.getSession(false)).thenReturn(null);
+
+        MessageResponse response = authService.logout(httpRequest, httpResponse);
+
+        assertNotNull(response);
+        assertEquals("Logout successful", response.getMessage());
+    }
+
+    @Test
     void getCurrentUser_unauthenticated_throwsInvalidCredentials() {
+        assertThrows(InvalidCredentialsException.class, () -> authService.getCurrentUser());
+    }
+
+    @Test
+    void getCurrentUser_anonymousAuthentication_throwsInvalidCredentials() {
+        org.springframework.security.authentication.AnonymousAuthenticationToken anonAuth =
+                mock(org.springframework.security.authentication.AnonymousAuthenticationToken.class);
+        SecurityContextHolder.getContext().setAuthentication(anonAuth);
+
+        assertThrows(InvalidCredentialsException.class, () -> authService.getCurrentUser());
+    }
+
+    @Test
+    void getCurrentUser_userNotFoundInDb_throwsInvalidCredentials() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.isAuthenticated()).thenReturn(true);
+        when(auth.getName()).thenReturn("deleted@example.com");
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        when(userRepository.findByUsername("deleted@example.com")).thenReturn(Optional.empty());
+
         assertThrows(InvalidCredentialsException.class, () -> authService.getCurrentUser());
     }
 

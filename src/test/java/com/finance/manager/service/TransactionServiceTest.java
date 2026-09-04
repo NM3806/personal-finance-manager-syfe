@@ -206,4 +206,43 @@ class TransactionServiceTest {
 
         assertThrows(ForbiddenException.class, () -> transactionService.deleteTransaction(1L));
     }
+
+    @Test
+    void getTransactions_withAllFilters() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+
+        LocalDate start = LocalDate.now().minusMonths(1);
+        LocalDate end = LocalDate.now();
+
+        Transaction t1 = new Transaction(BigDecimal.valueOf(5000), LocalDate.now(), salaryCategory, "Salary", CategoryType.INCOME, testUser);
+        t1.setId(1L);
+
+        when(transactionRepository.findAll(any(Specification.class))).thenReturn(List.of(t1));
+
+        TransactionListResponse response = transactionService.getTransactions(start, end, 10L, "Salary", CategoryType.INCOME);
+
+        assertNotNull(response);
+        assertEquals(1, response.getTransactions().size());
+    }
+
+    @Test
+    void updateTransaction_withSameDateAndNullFields() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        LocalDate date = LocalDate.now().minusDays(1);
+        Transaction existing = new Transaction(BigDecimal.valueOf(5000), date, salaryCategory, "Old", CategoryType.INCOME, testUser);
+        existing.setId(1L);
+
+        when(transactionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateTransactionRequest request = new UpdateTransactionRequest();
+        request.setDate(date);
+
+        TransactionResponse response = transactionService.updateTransaction(1L, request);
+
+        assertNotNull(response);
+        assertEquals(BigDecimal.valueOf(5000).setScale(2), response.getAmount());
+        assertEquals("Old", response.getDescription());
+        assertEquals("Salary", response.getCategory());
+    }
 }

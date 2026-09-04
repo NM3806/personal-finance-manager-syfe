@@ -93,6 +93,13 @@ class ReportServiceTest {
     @Test
     void getMonthlyReport_invalidYear_throwsBadRequest() {
         assertThrows(BadRequestException.class, () -> reportService.getMonthlyReport(1800, 1));
+        assertThrows(BadRequestException.class, () -> reportService.getMonthlyReport(2200, 1));
+    }
+
+    @Test
+    void getYearlyReport_invalidYear_throwsBadRequest() {
+        assertThrows(BadRequestException.class, () -> reportService.getYearlyReport(1800));
+        assertThrows(BadRequestException.class, () -> reportService.getYearlyReport(2200));
     }
 
     @Test

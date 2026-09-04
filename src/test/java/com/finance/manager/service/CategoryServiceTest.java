@@ -201,6 +201,17 @@ class CategoryServiceTest {
     }
 
     @Test
+    void getValidCategory_returnsUserCustomCategory() {
+        Category customCat = new Category("Freelance", CategoryType.INCOME, testUser, true);
+        when(categoryRepository.findByNameIgnoreCaseAndUserIsNull("Freelance")).thenReturn(Optional.empty());
+        when(categoryRepository.findByNameIgnoreCaseAndUser("Freelance", testUser)).thenReturn(Optional.of(customCat));
+
+        Category result = categoryService.getValidCategory("Freelance", testUser);
+        assertEquals("Freelance", result.getName());
+        assertTrue(result.isCustom());
+    }
+
+    @Test
     void getValidCategory_invalid_throwsBadRequest() {
         when(categoryRepository.findByNameIgnoreCaseAndUserIsNull("Invalid")).thenReturn(Optional.empty());
         when(categoryRepository.findByNameIgnoreCaseAndUser("Invalid", testUser)).thenReturn(Optional.empty());
