@@ -33,5 +33,6 @@ target/
 
 ### Logs & OS ###
 *.log
+*.pdf
 .DS_Store
 Thumbs.db
