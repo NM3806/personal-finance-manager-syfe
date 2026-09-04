@@ -118,7 +118,7 @@ class GoalServiceTest {
 
         assertNotNull(response);
         assertEquals(1, response.getGoals().size());
-        assertEquals(BigDecimal.valueOf(0).setScale(2), response.getGoals().get(0).getCurrentProgress());
+        assertEquals(BigDecimal.ZERO, response.getGoals().get(0).getCurrentProgress());
         assertEquals(BigDecimal.valueOf(2000).setScale(2), response.getGoals().get(0).getRemainingAmount());
     }
 
@@ -239,6 +239,16 @@ class GoalServiceTest {
     void createGoal_nullTargetAmount_throwsBadRequest() {
         when(authService.getCurrentUser()).thenReturn(testUser);
         CreateGoalRequest request = new CreateGoalRequest("Trip", null, LocalDate.now().plusMonths(6), LocalDate.now());
+
+        assertThrows(BadRequestException.class, () -> goalService.createGoal(request));
+    }
+
+    @Test
+    void createGoal_startDateAfterTargetDate_throwsBadRequest() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        LocalDate targetDate = LocalDate.now().plusMonths(1);
+        LocalDate startDate = LocalDate.now().plusMonths(2);
+        CreateGoalRequest request = new CreateGoalRequest("Trip", BigDecimal.valueOf(1000), targetDate, startDate);
 
         assertThrows(BadRequestException.class, () -> goalService.createGoal(request));
     }

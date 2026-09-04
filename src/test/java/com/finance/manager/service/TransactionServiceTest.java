@@ -132,18 +132,22 @@ class TransactionServiceTest {
     }
 
     @Test
-    void updateTransaction_dateModified_throwsBadRequest() {
+    void updateTransaction_dateModified_ignoresDate() {
         when(authService.getCurrentUser()).thenReturn(testUser);
         LocalDate date = LocalDate.now().minusDays(1);
         Transaction existing = new Transaction(BigDecimal.valueOf(5000), date, salaryCategory, "Old", CategoryType.INCOME, testUser);
         existing.setId(1L);
 
         when(transactionRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(categoryService.getValidCategory("Salary", testUser)).thenReturn(salaryCategory);
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
 
         UpdateTransactionRequest request = new UpdateTransactionRequest(BigDecimal.valueOf(6000), "Salary", "Updated");
         request.setDate(LocalDate.now().minusDays(5));
 
-        assertThrows(BadRequestException.class, () -> transactionService.updateTransaction(1L, request));
+        TransactionResponse response = transactionService.updateTransaction(1L, request);
+        assertNotNull(response);
+        assertEquals(date, response.getDate());
     }
 
     @Test

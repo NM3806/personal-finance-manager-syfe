@@ -264,8 +264,9 @@ class TransactionControllerTest {
                         .session(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateReq)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Transaction date cannot be modified"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value("2024-01-15"))
+                .andExpect(jsonPath("$.amount").value(60000.00));
     }
 
     @Test

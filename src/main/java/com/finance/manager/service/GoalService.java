@@ -52,6 +52,10 @@ public class GoalService {
 
         LocalDate startDate = request.getStartDate() != null ? request.getStartDate() : LocalDate.now();
 
+        if (startDate.isAfter(request.getTargetDate())) {
+            throw new BadRequestException("Start date cannot be after target date");
+        }
+
         SavingsGoal goal = new SavingsGoal(
                 request.getGoalName().trim(),
                 request.getTargetAmount(),

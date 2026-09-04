@@ -45,4 +45,9 @@ public class CategoryResponse {
     public void setCustom(boolean custom) {
         isCustom = custom;
     }
+
+    @JsonProperty("custom")
+    public boolean getCustom() {
+        return isCustom;
+    }
 }

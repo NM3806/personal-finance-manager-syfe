@@ -116,10 +116,6 @@ public class TransactionService {
             throw new ForbiddenException("Cannot access another user's transaction");
         }
 
-        if (request.getDate() != null && !request.getDate().equals(transaction.getDate())) {
-            throw new BadRequestException("Transaction date cannot be modified");
-        }
-
         if (request.getAmount() != null) {
             transaction.setAmount(request.getAmount());
         }

@@ -37,7 +37,7 @@ public class GoalResponse {
         this.targetAmount = targetAmount != null ? targetAmount.setScale(2, RoundingMode.HALF_UP) : null;
         this.targetDate = targetDate;
         this.startDate = startDate;
-        this.currentProgress = currentProgress != null ? currentProgress.setScale(2, RoundingMode.HALF_UP) : null;
+        this.currentProgress = currentProgress != null ? (currentProgress.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : currentProgress.setScale(2, RoundingMode.HALF_UP)) : null;
         this.progressPercentage = progressPercentage;
         this.remainingAmount = remainingAmount != null ? remainingAmount.setScale(2, RoundingMode.HALF_UP) : null;
     }
@@ -87,7 +87,7 @@ public class GoalResponse {
     }
 
     public void setCurrentProgress(BigDecimal currentProgress) {
-        this.currentProgress = currentProgress != null ? currentProgress.setScale(2, RoundingMode.HALF_UP) : null;
+        this.currentProgress = currentProgress != null ? (currentProgress.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : currentProgress.setScale(2, RoundingMode.HALF_UP)) : null;
     }
 
     public Double getProgressPercentage() {

@@ -139,6 +139,6 @@ class ReportServiceTest {
         assertEquals(2024, report.getYear());
         assertTrue(report.getTotalIncome().isEmpty());
         assertTrue(report.getTotalExpenses().isEmpty());
-        assertEquals(BigDecimal.ZERO.setScale(2), report.getNetSavings());
+        assertEquals(BigDecimal.ZERO, report.getNetSavings());
     }
 }

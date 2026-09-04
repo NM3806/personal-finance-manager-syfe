@@ -21,7 +21,7 @@ public class YearlyReportResponse {
         this.year = year;
         this.totalIncome = totalIncome;
         this.totalExpenses = totalExpenses;
-        this.netSavings = netSavings != null ? netSavings.setScale(2, RoundingMode.HALF_UP) : null;
+        this.netSavings = netSavings != null ? (netSavings.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : netSavings.setScale(2, RoundingMode.HALF_UP)) : null;
     }
 
     public int getYear() {
@@ -53,6 +53,6 @@ public class YearlyReportResponse {
     }
 
     public void setNetSavings(BigDecimal netSavings) {
-        this.netSavings = netSavings != null ? netSavings.setScale(2, RoundingMode.HALF_UP) : null;
+        this.netSavings = netSavings != null ? (netSavings.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : netSavings.setScale(2, RoundingMode.HALF_UP)) : null;
     }
 }
