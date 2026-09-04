@@ -47,8 +47,16 @@ The JaCoCo HTML report is generated at `target/site/jacoco/index.html`.
 **Coverage Metrics Achieved:**
 - Line Coverage: > 98%
 - Instruction Coverage: > 98%
-- Branch Coverage: > 82%
-- Total Automated Tests: 131 tests (100% passing)
+- Branch Coverage: > 81%
+- Total Automated Tests: 132 tests (100% passing)
+
+### Run Provided End-to-End Test Script
+Make the script executable and run against the running server:
+```bash
+chmod +x ./financial_manager_tests.sh
+./financial_manager_tests.sh "http://localhost:8080/api"
+```
+*(All 86/86 tests across all 8 scenarios pass with 100% success rate)*
 
 ---
 
