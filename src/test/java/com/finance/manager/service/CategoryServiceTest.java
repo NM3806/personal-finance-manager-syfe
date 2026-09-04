@@ -12,6 +12,7 @@ import com.finance.manager.exception.ConflictException;
 import com.finance.manager.exception.ForbiddenException;
 import com.finance.manager.exception.ResourceNotFoundException;
 import com.finance.manager.repository.CategoryRepository;
+import com.finance.manager.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ class CategoryServiceTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private CategoryService categoryService;
@@ -134,6 +138,18 @@ class CategoryServiceTest {
         when(categoryRepository.existsByNameIgnoreCaseAndUserIsNull("Salary")).thenReturn(true);
 
         assertThrows(BadRequestException.class, () -> categoryService.deleteCategory("Salary"));
+    }
+
+    @Test
+    void deleteCategory_referencedByTransactions_throwsBadRequest() {
+        when(authService.getCurrentUser()).thenReturn(testUser);
+        when(categoryRepository.existsByNameIgnoreCaseAndUserIsNull("Freelance")).thenReturn(false);
+
+        Category customCat = new Category("Freelance", CategoryType.INCOME, testUser, true);
+        when(categoryRepository.findByNameIgnoreCaseAndUser("Freelance", testUser)).thenReturn(Optional.of(customCat));
+        when(transactionRepository.existsByCategory(customCat)).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () -> categoryService.deleteCategory("Freelance"));
     }
 
     @Test

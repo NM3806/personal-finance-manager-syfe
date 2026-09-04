@@ -12,6 +12,7 @@ import com.finance.manager.exception.ConflictException;
 import com.finance.manager.exception.ForbiddenException;
 import com.finance.manager.exception.ResourceNotFoundException;
 import com.finance.manager.repository.CategoryRepository;
+import com.finance.manager.repository.TransactionRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +26,12 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final AuthService authService;
+    private final TransactionRepository transactionRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, AuthService authService) {
+    public CategoryService(CategoryRepository categoryRepository, AuthService authService, TransactionRepository transactionRepository) {
         this.categoryRepository = categoryRepository;
         this.authService = authService;
+        this.transactionRepository = transactionRepository;
     }
 
     @PostConstruct
@@ -91,6 +94,9 @@ public class CategoryService {
 
         Optional<Category> userCategory = categoryRepository.findByNameIgnoreCaseAndUser(trimmedName, user);
         if (userCategory.isPresent()) {
+            if (transactionRepository.existsByCategory(userCategory.get())) {
+                throw new BadRequestException("Cannot delete category referenced by transactions: " + trimmedName);
+            }
             categoryRepository.delete(userCategory.get());
             return new MessageResponse("Category deleted successfully");
         }
